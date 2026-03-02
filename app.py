@@ -7,7 +7,7 @@ model = pickle.load(open("Process.pkl", "rb"))
 
 st.set_page_config(page_title="AI Procurement Strategy Engine By Vinay", layout="centered")
 
-st.title("📊 AI Procurement Strategy Engine")
+st.title("📊 AI Procurement Strategy Engine By Vinay")
 st.write("Predict Kraljic Category using ML Model")
 
 st.divider()
