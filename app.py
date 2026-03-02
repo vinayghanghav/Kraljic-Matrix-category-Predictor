@@ -1,74 +1,48 @@
 import streamlit as st
-import pandas as pd
-import matplotlib.pyplot as plt
-import seaborn as sns
+import pickle
+import numpy as np
 
-st.set_page_config(page_title="Kraljic Matrix Dashboard", layout="wide")
+# Load the trained model
+model = pickle.load(open("model.pkl", "rb"))
 
-st.title("📊 Procurement Strategy - Kraljic Matrix Dashboard")
+st.set_page_config(page_title="AI Procurement Strategy Engine", layout="centered")
 
-# Upload file
-uploaded_file = st.file_uploader("Upload Procurement Dataset", type=["csv"])
+st.title("📊 AI Procurement Strategy Engine")
+st.write("Predict Kraljic Category using ML Model")
 
-if uploaded_file is not None:
-    df = pd.read_csv(uploaded_file)
+st.divider()
 
-    st.subheader("Dataset Preview")
-    st.dataframe(df.head())
+# Input Fields
+lead_time = st.number_input("Lead Time (Days)", min_value=0)
+order_volume = st.number_input("Order Volume (Units)", min_value=0)
+cost_per_unit = st.number_input("Cost per Unit")
+supply_risk = st.slider("Supply Risk Score", 0.0, 10.0)
+profit_impact = st.slider("Profit Impact Score", 0.0, 10.0)
+environmental_impact = st.slider("Environmental Impact", 0.0, 10.0)
+single_source_risk = st.selectbox("Single Source Risk", [0, 1])
 
-    # Sidebar threshold sliders
-    st.sidebar.header("Set Threshold Values")
+st.divider()
 
-    risk_threshold = st.sidebar.slider(
-        "Supply Risk Threshold",
-        float(df["Supply Risk"].min()),
-        float(df["Supply Risk"].max()),
-        float(df["Supply Risk"].mean())
-    )
+if st.button("Predict Kraljic Category"):
 
-    impact_threshold = st.sidebar.slider(
-        "Profit Impact Threshold",
-        float(df["Profit Impact"].min()),
-        float(df["Profit Impact"].max()),
-        float(df["Profit Impact"].mean())
-    )
+    features = np.array([[lead_time,
+                          order_volume,
+                          cost_per_unit,
+                          supply_risk,
+                          profit_impact,
+                          environmental_impact,
+                          single_source_risk]])
 
-    # Kraljic Classification
-    def classify(row):
-        if row["Supply Risk"] < risk_threshold and row["Profit Impact"] < impact_threshold:
-            return "Non-Critical"
-        elif row["Supply Risk"] < risk_threshold and row["Profit Impact"] >= impact_threshold:
-            return "Leverage"
-        elif row["Supply Risk"] >= risk_threshold and row["Profit Impact"] < impact_threshold:
-            return "Bottleneck"
-        else:
-            return "Strategic"
+    prediction = model.predict(features)[0]
 
-    df["Category"] = df.apply(classify, axis=1)
+    st.success(f"Predicted Category: {prediction}")
 
-    st.subheader("Category Distribution")
-    st.write(df["Category"].value_counts())
-
-    # Plot
-    st.subheader("Kraljic Matrix Visualization")
-
-    fig, ax = plt.subplots(figsize=(8,6))
-
-    sns.scatterplot(
-        data=df,
-        x="Supply Risk",
-        y="Profit Impact",
-        hue="Category",
-        palette="Set1",
-        ax=ax
-    )
-
-    ax.axvline(risk_threshold, color="black", linestyle="--")
-    ax.axhline(impact_threshold, color="black", linestyle="--")
-
-    ax.set_title("Kraljic Matrix")
-
-    st.pyplot(fig)
-
-else:
-    st.info("Please upload your CSV dataset to continue.")
+    # Strategy Recommendation
+    if prediction == "Strategic":
+        st.info("🔵 Strategy: Build long-term partnerships & secure supply contracts.")
+    elif prediction == "Leverage":
+        st.info("🟢 Strategy: Negotiate better pricing & bulk discounts.")
+    elif prediction == "Bottleneck":
+        st.info("🟡 Strategy: Reduce supply risk & identify alternative suppliers.")
+    elif prediction == "Non-Critical":
+        st.info("⚪ Strategy: Automate procurement & simplify ordering process.")
